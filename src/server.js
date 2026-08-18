@@ -26,8 +26,11 @@ app.get('/api/meta', (_req, res) => {
   });
 });
 
+// Runs to hide from the public feed (e.g. voided attempts), comma-separated ids.
+const HIDDEN = new Set((process.env.HIDE_RUNS || '').split(',').filter(Boolean));
+
 app.get('/api/runs', (_req, res) => {
-  res.json(arena.listRuns().map(publicRun));
+  res.json(arena.listRuns().filter((r) => !HIDDEN.has(r.id)).map(publicRun));
 });
 
 app.get('/api/runs/:id', (req, res) => {
