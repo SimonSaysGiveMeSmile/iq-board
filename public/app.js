@@ -149,13 +149,28 @@ function deskHTML(run) {
 }
 
 function renderLedger() {
+  const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const rows = [...state.runs.values()]
-    .filter((r) => r.status === 'finished' && r.score && r.score.iq != null)
-    .map((r) => ({ label: r.label, iq: r.score.iq, sub: `${r.provider}/${r.model}`, human: false }));
+    .filter((r) => r.status === 'finished' && r.score
+      && (r.score.iq != null || r.score.note === 'below_measurable_range'))
+    .map((r) => ({
+      label: r.label,
+      mark: r.score.iq != null ? String(r.score.iq) : '<85',
+      // The site only measures 85-145; below-range runs sort under everything scored.
+      sortVal: r.score.iq != null ? r.score.iq : 84,
+      sub: `${r.provider}/${r.model}${r.effort ? ` · ${r.effort}` : ''} · ${fmtDate(r.finishedAt || r.createdAt)}`,
+      human: false,
+    }));
   if (state.meta?.humanBaseline) {
-    rows.push({ label: state.meta.humanBaseline.label, iq: state.meta.humanBaseline.iq, sub: 'homo sapiens · reference', human: true });
+    rows.push({
+      label: state.meta.humanBaseline.label,
+      mark: String(state.meta.humanBaseline.iq),
+      sortVal: state.meta.humanBaseline.iq,
+      sub: 'homo sapiens · reference',
+      human: true,
+    });
   }
-  rows.sort((a, b) => b.iq - a.iq);
+  rows.sort((a, b) => b.sortVal - a.sortVal);
   $('ledger').innerHTML = rows.length
     ? rows.map((r, i) => `
       <div class="ledger-row ${r.human ? 'human' : ''}">
@@ -163,7 +178,7 @@ function renderLedger() {
         <span class="who">${r.human ? `<em>${esc(r.label)}</em>` : esc(r.label)}</span>
         <span class="leader"></span>
         <span class="sub">${esc(r.sub)}</span>
-        <span class="mark">${r.iq}</span>
+        <span class="mark">${esc(r.mark)}</span>
       </div>`).join('')
     : '<div class="ledger-empty">No completed examinations yet.</div>';
 }
