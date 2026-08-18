@@ -274,6 +274,9 @@ input::placeholder { color: #999; font-style: italic; }
 .ledger-row.human .sub { color: #bbb; }
 .ledger-empty { font-family: var(--serif); font-style: italic; padding: 18px 4px; }
 
+/* The hidden attribute must always win, even over display rules below. */
+[hidden] { display: none !important; }
+
 /* ── Overlay ── */
 .overlay {
   position: fixed; inset: 0; background: rgba(255,255,255,.88);
