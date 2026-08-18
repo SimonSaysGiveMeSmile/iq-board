@@ -25,9 +25,7 @@ async function boot() {
   sel.dispatchEvent(new Event('change'));
   if (state.meta.adminRequired) {
     // Curated mode: launches happen server-side; visitors just watch.
-    $('launch-form').hidden = true;
     $('launch-form').style.display = 'none';
-    $('curated-note').hidden = false;
   }
 
   const runs = await fetch('/api/runs').then((r) => r.json());
@@ -143,7 +141,7 @@ function deskHTML(run) {
   }
 
   return `
-    <div class="desk-head"><span>№ ${run.id}</span><span class="status">${run.status}</span></div>
+    <div class="desk-head"><span>№ ${run.id}${run.by ? ` · by ${esc(run.by)}` : ''}</span><span class="status">${run.status}</span></div>
     <div class="desk-name">${esc(run.label)}</div>
     <div class="desk-model">${esc(run.provider)} / ${esc(run.model)}${run.effort ? ` · effort:${run.effort}` : ''}</div>
     <div class="desk-clock">
@@ -156,6 +154,22 @@ function deskHTML(run) {
     ${footer}`;
 }
 
+// Percentile on the standard IQ curve (mean 100, SD 15) when Mensa didn't supply one.
+function percentileFromIq(iq) {
+  const z = (iq - 100) / 15;
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const dens = Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+  const poly = t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  const p = z >= 0 ? 1 - dens * poly : dens * poly;
+  return Math.round(p * 1000) / 10;
+}
+
+function pctText(iq, sitePct) {
+  if (iq == null) return '<16th %ile';
+  const p = sitePct ? parseFloat(sitePct) : percentileFromIq(iq);
+  return `${p}th %ile`;
+}
+
 function renderLedger() {
   const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const rows = [...state.runs.values()]
@@ -164,15 +178,17 @@ function renderLedger() {
     .map((r) => ({
       label: r.label,
       mark: r.score.iq != null ? String(r.score.iq) : '<85',
+      pct: pctText(r.score.iq, r.score.percentile),
       // The site only measures 85-145; below-range runs sort under everything scored.
       sortVal: r.score.iq != null ? r.score.iq : 84,
-      sub: `${r.provider}/${r.model}${r.effort ? ` · ${r.effort}` : ''} · ${fmtDate(r.finishedAt || r.createdAt)}`,
+      sub: `${r.provider}/${r.model}${r.effort ? ` · ${r.effort}` : ''}${r.by ? ` · by ${r.by}` : ''} · ${fmtDate(r.finishedAt || r.createdAt)}`,
       human: false,
     }));
   if (state.meta?.humanBaseline) {
     rows.push({
       label: state.meta.humanBaseline.label,
       mark: String(state.meta.humanBaseline.iq),
+      pct: pctText(state.meta.humanBaseline.iq),
       sortVal: state.meta.humanBaseline.iq,
       sub: 'homo sapiens · reference',
       human: true,
@@ -186,6 +202,7 @@ function renderLedger() {
         <span class="who">${r.human ? `<em>${esc(r.label)}</em>` : esc(r.label)}</span>
         <span class="leader"></span>
         <span class="sub">${esc(r.sub)}</span>
+        <span class="pct">${esc(r.pct)}</span>
         <span class="mark">${esc(r.mark)}</span>
       </div>`).join('')
     : '<div class="ledger-empty">No completed examinations yet.</div>';

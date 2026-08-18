@@ -63,7 +63,7 @@ export class Arena {
 
   shotsDir(id) { return path.join(RUNS_DIR, id); }
 
-  createRun({ provider, model, label, effort, apiKey }) {
+  createRun({ provider, model, label, effort, apiKey, ip }) {
     const id = crypto.randomBytes(6).toString('hex');
     const run = {
       id,
@@ -71,6 +71,7 @@ export class Arena {
       model,
       label: label || `${provider}/${model}`,
       effort: effort || undefined,
+      ip: ip || undefined,
       status: 'queued',
       createdAt: Date.now(),
       question: 0,
@@ -148,6 +149,15 @@ export class Arena {
 }
 
 export function publicRun(run) {
-  const { answers, ...rest } = run;
-  return rest;
+  const { answers, ip, ...rest } = run;
+  return { ...rest, by: maskIp(ip) };
+}
+
+// Privacy-masked visitor identity: keep enough to distinguish, not to identify.
+function maskIp(ip) {
+  if (!ip) return undefined;
+  const v4 = ip.match(/(\d+\.\d+)\.\d+\.\d+$/);
+  if (v4) return `${v4[1]}.•.•`;
+  const groups = ip.split(':').filter(Boolean);
+  return groups.length > 2 ? `${groups[0]}:${groups[1]}:••` : ip;
 }

@@ -10,8 +10,11 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 // Human reference entry shown on the leaderboard.
 const HUMAN_BASELINE = { label: process.env.HUMAN_LABEL || 'Simon (human, manual run)', iq: Number(process.env.HUMAN_IQ || 138) };
 
+const IP_DAILY_LIMIT = Number(process.env.IP_DAILY_LIMIT || 3);
+
 const arena = new Arena();
 const app = express();
+app.set('trust proxy', true); // Railway proxy: req.ip = client IP from X-Forwarded-For
 app.use(express.json({ limit: '256kb' }));
 
 app.use(express.static(path.resolve('public')));
@@ -50,7 +53,14 @@ app.post('/api/runs', (req, res) => {
   if (p.envKey && !apiKey && !process.env[p.envKey] && !(p.id === 'google' && process.env.GEMINI_API_KEY)) {
     return res.status(400).json({ error: `no API key: set ${p.envKey} on the server or supply one in the launcher` });
   }
-  const run = arena.createRun({ provider, model: resolvedModel, label, effort, apiKey });
+  // Visitors are distinguished by IP; each IP gets a daily allowance.
+  const ip = req.ip || 'unknown';
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  const used = arena.listRuns().filter((r) => r.ip === ip && r.createdAt > dayAgo).length;
+  if (used >= IP_DAILY_LIMIT) {
+    return res.status(429).json({ error: `daily allowance reached (${IP_DAILY_LIMIT} runs per visitor per day)` });
+  }
+  const run = arena.createRun({ provider, model: resolvedModel, label, effort, apiKey, ip });
   res.json(publicRun(run));
 });
 
