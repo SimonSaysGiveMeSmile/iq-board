@@ -64,6 +64,29 @@ app.post('/api/runs', (req, res) => {
   res.json(publicRun(run));
 });
 
+// Admin-gated restart: re-seat a past candidate with the same configuration.
+const RERUN_PASSWORD = process.env.RERUN_PASSWORD || '1234';
+
+app.post('/api/runs/:id/rerun', (req, res) => {
+  if ((req.body?.password || '') !== RERUN_PASSWORD) {
+    return res.status(403).json({ error: 'wrong invigilator password' });
+  }
+  const orig = arena.getRun(req.params.id);
+  if (!orig) return res.status(404).json({ error: 'run not found' });
+  const p = providers[orig.provider];
+  if (p?.envKey && !process.env[p.envKey] && !(p.id === 'google' && process.env.GEMINI_API_KEY)) {
+    return res.status(400).json({ error: `no server key for ${orig.provider}` });
+  }
+  const run = arena.createRun({
+    provider: orig.provider,
+    model: orig.model,
+    label: orig.label.replace(/ \(restart(ed)?\)$/, '') + ' (restart)',
+    effort: orig.effort,
+    ip: req.ip,
+  });
+  res.json(publicRun(run));
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 

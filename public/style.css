@@ -202,6 +202,12 @@ input::placeholder { color: #999; font-style: italic; }
   padding: 8px 12px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em;
 }
 .desk-head .status { text-transform: uppercase; }
+.btn-rerun {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  background: transparent; color: var(--paper); border: 1px solid var(--paper);
+  padding: 2px 7px; margin-right: 10px;
+}
+.btn-rerun:hover { background: var(--paper); color: var(--ink); }
 .desk.running .desk-head .status::before { content: "● "; animation: blink 1s steps(2) infinite; }
 
 .desk-name {

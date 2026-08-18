@@ -131,6 +131,9 @@ function deskHTML(run) {
     ? `<img src="/shots/${run.id}/${latest.screenshot}" alt="current question" />`
     : '<span class="noshot">AWAITING FIRST QUESTION…</span>';
 
+  const rerunBtn = ['finished', 'error'].includes(run.status)
+    ? `<button class="btn-rerun" data-rerun="${run.id}" title="Restart this examination (invigilator only)">⟲ RESTART</button>`
+    : '';
   let footer = '';
   if (run.status === 'finished' && run.score) {
     footer = run.score.iq != null
@@ -141,7 +144,7 @@ function deskHTML(run) {
   }
 
   return `
-    <div class="desk-head"><span>№ ${run.id}${run.by ? ` · by ${esc(run.by)}` : ''}</span><span class="status">${run.status}</span></div>
+    <div class="desk-head"><span>№ ${run.id}${run.by ? ` · by ${esc(run.by)}` : ''}</span><span>${rerunBtn}<span class="status">${run.status}</span></span></div>
     <div class="desk-name">${esc(run.label)}</div>
     <div class="desk-model">${esc(run.provider)} / ${esc(run.model)}${run.effort ? ` · effort:${run.effort}` : ''}</div>
     <div class="desk-clock">
@@ -258,6 +261,22 @@ $('launch-form').addEventListener('submit', async (e) => {
     setTimeout(() => { note.textContent = ''; }, 6000);
   }
 });
+
+/* admin restart (event delegation — desk cards re-render constantly) */
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-rerun]');
+  if (!btn) return;
+  e.stopPropagation();
+  const password = window.prompt('Invigilator password:');
+  if (password === null) return;
+  const res = await fetch(`/api/runs/${btn.dataset.rerun}/rerun`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json();
+  window.alert(res.ok ? `Candidate re-seated: № ${data.id}` : `Refused: ${data.error}`);
+}, true);
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
