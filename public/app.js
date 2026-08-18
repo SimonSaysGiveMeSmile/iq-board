@@ -13,6 +13,15 @@ const fmtClock = (s) => (s == null ? '—:——' : `${Math.floor(s / 60)}:${Str
 /* ── boot ── */
 async function boot() {
   state.meta = await fetch('/api/meta').then((r) => r.json());
+
+  // Simple public launcher: one challenger dropdown vs the human record.
+  $('f-challenger').innerHTML = (state.meta.challengers || [])
+    .map((c, i) => `<option value="${i}">${esc(c.label)}</option>`)
+    .join('');
+  if (state.meta.humanBaseline) {
+    $('versus-human').textContent = `${state.meta.humanBaseline.label.split(' (')[0].toUpperCase()} · IQ ${state.meta.humanBaseline.iq}`;
+  }
+
   const sel = $('f-provider');
   sel.innerHTML = state.meta.providers
     .map((p) => `<option value="${p.id}">${p.label}${p.hasEnvKey ? '' : ' — needs key'}</option>`)
@@ -23,10 +32,7 @@ async function boot() {
     $('effort-field').style.display = sel.value === 'anthropic' ? '' : 'none';
   });
   sel.dispatchEvent(new Event('change'));
-  if (state.meta.adminRequired) {
-    // Curated mode: launches happen server-side; visitors just watch.
-    $('launch-form').style.display = 'none';
-  }
+  if (sessionStorage.getItem('invigilator') === '1') $('launch-form').hidden = false;
 
   const runs = await fetch('/api/runs').then((r) => r.json());
   for (const run of runs) state.runs.set(run.id, run);
@@ -272,7 +278,44 @@ function closeOverlay() {
 $('overlay-close').addEventListener('click', closeOverlay);
 $('overlay').addEventListener('click', (e) => { if (e.target === $('overlay')) closeOverlay(); });
 
-/* ── launch ── */
+/* ── simple launch (public) ── */
+$('simple-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const c = state.meta.challengers[Number($('f-challenger').value)];
+  if (!c) return;
+  $('simple-btn').disabled = true;
+  $('simple-note').textContent = 'seating…';
+  try {
+    const res = await fetch('/api/runs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(c),
+    });
+    const data = await res.json();
+    $('simple-note').textContent = res.ok ? `${c.label} is at desk № ${data.id} — watch below.` : `refused: ${data.error}`;
+  } catch (err) {
+    $('simple-note').textContent = `refused: ${err.message}`;
+  } finally {
+    $('simple-btn').disabled = false;
+    setTimeout(() => { $('simple-note').textContent = ''; }, 8000);
+  }
+});
+
+/* ── invigilator unlock (full form) ── */
+$('invigilator-btn').addEventListener('click', async () => {
+  if (!$('launch-form').hidden) { $('launch-form').hidden = true; sessionStorage.removeItem('invigilator'); return; }
+  const password = window.prompt('Invigilator password:');
+  if (password === null) return;
+  const res = await fetch('/api/admin/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  if (res.ok) { $('launch-form').hidden = false; sessionStorage.setItem('invigilator', '1'); }
+  else window.alert('Wrong password.');
+});
+
+/* ── launch (invigilator form) ── */
 $('launch-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = $('launch-btn');

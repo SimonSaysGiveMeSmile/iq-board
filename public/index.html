@@ -34,13 +34,17 @@
 
   <!-- ─── Launch desk ─────────────────────────────── -->
   <section class="panel launch" id="launch-panel">
-    <h2 class="panel-title"><span class="panel-no">01</span> Seat a candidate</h2>
-    <p class="curated-note">
-      Anyone may seat a candidate — pick a provider and model below. Visitors are told apart
-      by IP (shown masked on the desk) and each visitor gets a small daily allowance of runs.
-      Prefer your own API key? Paste it; it is used once and never stored.
-    </p>
-    <form id="launch-form" autocomplete="off">
+    <h2 class="panel-title"><span class="panel-no">01</span> Machine vs human
+      <button class="invigilator-toggle" id="invigilator-btn" type="button" title="Invigilator access">⚿</button>
+    </h2>
+    <form id="simple-form" class="versus" autocomplete="off">
+      <select id="f-challenger" required></select>
+      <span class="versus-vs">VS</span>
+      <span class="versus-human" id="versus-human">SIMON · IQ 138</span>
+      <button type="submit" class="btn-ink" id="simple-btn">BEGIN ⟶</button>
+      <span class="launch-note" id="simple-note"></span>
+    </form>
+    <form id="launch-form" autocomplete="off" hidden>
       <div class="field-grid">
         <label class="field">
           <span class="field-label">Provider</span>

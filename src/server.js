@@ -20,13 +20,33 @@ app.use(express.json({ limit: '256kb' }));
 app.use(express.static(path.resolve('public')));
 app.use('/shots', express.static(path.resolve(process.env.DATA_DIR || 'data', 'runs'), { maxAge: '1h' }));
 
+// Curated one-click challengers for the public simple launcher.
+const CHALLENGERS = [
+  { provider: 'anthropic', model: 'claude-opus-4-8', label: 'Claude Opus 4.8', effort: 'medium' },
+  { provider: 'anthropic', model: 'claude-fable-5', label: 'Claude Fable 5', effort: 'medium' },
+  { provider: 'openai', model: 'gpt-5.5', label: 'GPT-5.5' },
+  { provider: 'xai', model: 'grok-4.6', label: 'Grok 4.6' },
+  { provider: 'google', model: 'gemini-flash-latest', label: 'Gemini Flash' },
+  { provider: 'random', model: 'coin-flip', label: 'Random guessing (free)' },
+];
+
 app.get('/api/meta', (_req, res) => {
   res.json({
     providers: providerMeta(),
+    challengers: CHALLENGERS.filter((c) => {
+      const p = providers[c.provider];
+      return !p.envKey || process.env[p.envKey] || (p.id === 'google' && process.env.GEMINI_API_KEY);
+    }),
     humanBaseline: HUMAN_BASELINE,
     adminRequired: Boolean(ADMIN_TOKEN),
     test: { name: 'Mensa Norway IQ Test (linked by Mensa Sweden)', url: 'https://test.mensa.no/', questions: 35, minutes: 25 },
   });
+});
+
+// Unlock the advanced launcher (same password as restart).
+app.post('/api/admin/verify', (req, res) => {
+  if ((req.body?.password || '') !== RERUN_PASSWORD) return res.status(403).json({ ok: false });
+  res.json({ ok: true });
 });
 
 // Runs to hide from the public feed (e.g. voided attempts), comma-separated ids.
