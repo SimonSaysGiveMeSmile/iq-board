@@ -23,7 +23,12 @@ async function boot() {
     $('effort-field').style.display = sel.value === 'anthropic' ? '' : 'none';
   });
   sel.dispatchEvent(new Event('change'));
-  if (state.meta.adminRequired) $('admin-field').hidden = false;
+  if (state.meta.adminRequired) {
+    // Curated mode: launches happen server-side; visitors just watch.
+    $('launch-form').hidden = true;
+    $('launch-form').style.display = 'none';
+    $('curated-note').hidden = false;
+  }
 
   const runs = await fetch('/api/runs').then((r) => r.json());
   for (const run of runs) state.runs.set(run.id, run);
@@ -215,7 +220,7 @@ $('launch-form').addEventListener('submit', async (e) => {
   try {
     const res = await fetch('/api/runs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-token': $('f-admin').value },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         provider: $('f-provider').value,
         model: $('f-model').value,

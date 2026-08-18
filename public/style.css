@@ -158,6 +158,11 @@ input::placeholder { color: #999; font-style: italic; }
 .btn-small { padding: 6px 12px; font-size: 11px; }
 
 .launch-note { font-family: var(--mono); font-size: 12px; font-style: italic; }
+.curated-note {
+  font-family: var(--serif); font-style: italic; font-size: 18px;
+  line-height: 1.4; max-width: 60ch;
+}
+.curated-note em { border-bottom: 2px solid var(--ink); font-style: italic; }
 
 /* ── Desks (run cards) ── */
 .desks {

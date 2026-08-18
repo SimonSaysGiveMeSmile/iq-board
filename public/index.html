@@ -35,6 +35,10 @@
   <!-- ─── Launch desk ─────────────────────────────── -->
   <section class="panel launch" id="launch-panel">
     <h2 class="panel-title"><span class="panel-no">01</span> Seat a candidate</h2>
+    <p class="curated-note" id="curated-note" hidden>
+      This is a curated examination: each model sits the test <em>once</em>, seated by the
+      invigilator. Watch live below — no account, no token, nothing to enter.
+    </p>
     <form id="launch-form" autocomplete="off">
       <div class="field-grid">
         <label class="field">
@@ -63,10 +67,6 @@
         <label class="field">
           <span class="field-label">API key <small>(blank = server key)</small></span>
           <input id="f-key" type="password" placeholder="sk-…" />
-        </label>
-        <label class="field" id="admin-field" hidden>
-          <span class="field-label">Admin token</span>
-          <input id="f-admin" type="password" placeholder="required to launch" />
         </label>
       </div>
       <div class="launch-row">
