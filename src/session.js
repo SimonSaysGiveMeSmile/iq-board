@@ -15,17 +15,38 @@ function parseClock(text) {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
-// Click `clickSel` and wait for `expectSel` to become visible, retrying the
+// The site's page containers (.page_questions, .page_score) can have a
+// zero-height bounding box even when shown, so Playwright's box-based
+// visibility check reports them hidden. Test computed display instead.
+function isDisplayed(page, selector) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    return Boolean(el) && getComputedStyle(el).display !== 'none';
+  }, selector);
+}
+
+function waitDisplayed(page, selector, timeout) {
+  return page.waitForFunction(
+    (sel) => {
+      const el = document.querySelector(sel);
+      return Boolean(el) && getComputedStyle(el).display !== 'none';
+    },
+    selector,
+    { timeout },
+  );
+}
+
+// Click `clickSel` and wait for `expectSel` to become displayed, retrying the
 // click a few times — the site's jQuery fade transitions can swallow a click.
-async function clickUntil(page, clickSel, expectSel, attempts = 4) {
+async function clickUntil(page, clickSel, expectSel, attempts = 3) {
   for (let i = 0; i < attempts; i += 1) {
-    await page.locator(clickSel).first().click({ timeout: 30_000 }).catch(() => {});
+    await page.locator(clickSel).first().click({ timeout: 10_000 }).catch(() => {});
     try {
-      await page.locator(expectSel).first().waitFor({ state: 'visible', timeout: 10_000 });
+      await waitDisplayed(page, expectSel, 10_000);
       return;
     } catch { /* retry the click */ }
   }
-  throw new Error(`"${expectSel}" never became visible after clicking "${clickSel}"`);
+  throw new Error(`"${expectSel}" never became displayed after clicking "${clickSel}"`);
 }
 
 /**
@@ -67,13 +88,16 @@ export async function runTestSession({ browser, run, shotsDir, emit }) {
 
     for (let q = 0; q < TOTAL_QUESTIONS; q += 1) {
       // If the timer expired, the site jumps straight to scoring.
-      if (await page.locator('.page_score').isVisible().catch(() => false)) {
+      if (await isDisplayed(page, '.page_score').catch(() => false)) {
         emit('time_expired', { atQuestion: q + 1 });
         break;
       }
 
       const qDiv = page.locator(`#question_${q}`);
-      await qDiv.waitFor({ state: 'visible', timeout: 30_000 });
+      await waitDisplayed(page, `#question_${q}`, 30_000);
+      // Wait for the puzzle image to actually render before screenshotting.
+      await qDiv.locator('img.standardQuestionImage').first()
+        .waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
       await page.waitForTimeout(250); // let lazy images settle
 
       const remaining = await secondsRemaining();
@@ -130,20 +154,23 @@ export async function runTestSession({ browser, run, shotsDir, emit }) {
       });
 
       if (q < TOTAL_QUESTIONS - 1) {
-        // Advance unless the app auto-advanced after the answer click.
-        const nextVisible = await page.locator(`#question_${q + 1}`).isVisible().catch(() => false);
-        if (!nextVisible) await qDiv.locator('.questionNext').click({ timeout: 15_000 });
+        // Answering auto-advances with a fade; click Next only if it didn't.
+        const advanced = await waitDisplayed(page, `#question_${q + 1}`, 4_000).then(() => true).catch(() => false);
+        if (!advanced) {
+          await qDiv.locator('.questionNext').click({ timeout: 15_000 }).catch(() => {});
+          await waitDisplayed(page, `#question_${q + 1}`, 10_000).catch(() => {});
+        }
       } else {
         await qDiv.locator('.questionFinish').click({ timeout: 15_000 });
-        const dialog = page.locator('#endTestDialog');
-        if (await dialog.isVisible().catch(() => false)) {
-          await dialog.locator('.btn-danger').click({ timeout: 10_000 });
+        await page.waitForTimeout(500);
+        if (await isDisplayed(page, '#endTestDialog').catch(() => false)) {
+          await page.locator('#endTestDialog .btn-danger').click({ timeout: 10_000 }).catch(() => {});
         }
       }
     }
 
     emit('finishing', { answered: answers.length });
-    await page.locator('.page_score').waitFor({ state: 'visible', timeout: 60_000 });
+    await waitDisplayed(page, '.page_score', 60_000);
     const finalShot = path.join(shotsDir, 'result.png');
 
     // Wait for the scoring service to respond (IQ text, low-score note, or error).
