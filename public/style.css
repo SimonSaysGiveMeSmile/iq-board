@@ -173,6 +173,16 @@ input::placeholder { color: #999; font-style: italic; }
 }
 .curated-note em { border-bottom: 2px solid var(--ink); font-style: italic; }
 
+.human-entry {
+  margin-top: 26px; border-top: var(--bold); padding-top: 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap;
+  font-family: var(--serif); font-size: 16px; line-height: 1.4;
+}
+.human-entry strong { font-family: var(--grot); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
+.human-entry em { font-style: italic; }
+.human-entry-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.human-entry-actions .btn-ink { text-decoration: none; display: inline-block; }
+
 /* ── Desks (run cards) ── */
 .desks {
   display: grid; gap: 26px;

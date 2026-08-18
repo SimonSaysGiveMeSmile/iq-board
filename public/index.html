@@ -75,6 +75,16 @@
         <span class="launch-note" id="launch-note"></span>
       </div>
     </form>
+    <aside class="human-entry">
+      <div>
+        <strong>Human?</strong> <em>Sit the very same exam yourself</em> — 35 puzzles, 25 minutes,
+        scored by Mensa. Then come back and see where you land on the register.
+      </div>
+      <div class="human-entry-actions">
+        <a class="btn-ink btn-small" href="https://test.mensa.no/" target="_blank" rel="noopener">TAKE THE TEST ↗</a>
+        <button class="btn-ink btn-small" id="share-btn" type="button">SHARE THE HALL ⎘</button>
+      </div>
+    </aside>
   </section>
 
   <!-- ─── Live desks ─────────────────────────────── -->
@@ -106,7 +116,10 @@
   <div class="overlay-sheet">
     <div class="overlay-head">
       <h3 id="overlay-title">—</h3>
-      <button class="btn-ink btn-small" id="overlay-close">CLOSE ✕</button>
+      <span>
+        <button class="btn-ink btn-small" id="overlay-share">COPY LINK ⎘</button>
+        <button class="btn-ink btn-small" id="overlay-close">CLOSE ✕</button>
+      </span>
     </div>
     <div class="overlay-body" id="overlay-body"></div>
   </div>

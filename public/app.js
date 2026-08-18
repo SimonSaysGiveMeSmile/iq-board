@@ -32,6 +32,10 @@ async function boot() {
   for (const run of runs) state.runs.set(run.id, run);
   renderAll();
   connect();
+
+  // Deep link: /#run=<id> opens that examination record directly.
+  const deepLink = location.hash.match(/^#run=([a-f0-9]+)$/);
+  if (deepLink && state.runs.has(deepLink[1])) openOverlay(deepLink[1]);
 }
 
 /* ── websocket ── */
@@ -174,19 +178,28 @@ function pctText(iq, sitePct) {
 }
 
 function renderLedger() {
-  const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const rows = [...state.runs.values()]
-    .filter((r) => r.status === 'finished' && r.score
-      && (r.score.iq != null || r.score.note === 'below_measurable_range'))
-    .map((r) => ({
-      label: r.label,
-      mark: r.score.iq != null ? String(r.score.iq) : '<85',
-      pct: pctText(r.score.iq, r.score.percentile),
-      // The site only measures 85-145; below-range runs sort under everything scored.
-      sortVal: r.score.iq != null ? r.score.iq : 84,
-      sub: `${r.provider}/${r.model}${r.effort ? ` · ${r.effort}` : ''}${r.by ? ` · by ${r.by}` : ''} · ${fmtDate(r.finishedAt || r.createdAt)}`,
-      human: false,
-    }));
+  // One row per model: best score across all sittings, with attempt count.
+  const byModel = new Map();
+  for (const r of state.runs.values()) {
+    if (r.status !== 'finished' || !r.score) continue;
+    if (r.score.iq == null && r.score.note !== 'below_measurable_range') continue;
+    const key = `${r.provider}/${r.model}`;
+    const sortVal = r.score.iq != null ? r.score.iq : 84; // site floor is 85
+    const prev = byModel.get(key);
+    if (!prev) byModel.set(key, { best: r, sortVal, sittings: 1 });
+    else {
+      prev.sittings += 1;
+      if (sortVal > prev.sortVal) { prev.best = r; prev.sortVal = sortVal; }
+    }
+  }
+  const rows = [...byModel.entries()].map(([key, { best, sortVal, sittings }]) => ({
+    label: best.label.replace(/ \((rerun|restart)\)$/, ''),
+    mark: best.score.iq != null ? String(best.score.iq) : '<85',
+    pct: pctText(best.score.iq, best.score.percentile),
+    sortVal,
+    sub: `${key}${best.effort ? ` · ${best.effort}` : ''} · ${sittings} sitting${sittings > 1 ? 's' : ''} · best`,
+    human: false,
+  }));
   if (state.meta?.humanBaseline) {
     rows.push({
       label: state.meta.humanBaseline.label,
@@ -215,8 +228,29 @@ function renderLedger() {
 async function openOverlay(id) {
   state.openRun = id;
   $('overlay').hidden = false;
+  history.replaceState(null, '', `#run=${id}`);
   await loadOverlay(id);
 }
+
+/* sharing */
+async function shareUrl(url, title) {
+  if (navigator.share) {
+    try { await navigator.share({ title, url }); return true; } catch { /* cancelled */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    return 'copied';
+  } catch { window.prompt('Copy this link:', url); return true; }
+}
+$('share-btn').addEventListener('click', async () => {
+  const r = await shareUrl(location.origin, 'IQ Board — machine minds sit the Mensa test');
+  if (r === 'copied') { $('share-btn').textContent = 'LINK COPIED ✓'; setTimeout(() => { $('share-btn').textContent = 'SHARE THE HALL ⎘'; }, 2500); }
+});
+$('overlay-share').addEventListener('click', async () => {
+  if (!state.openRun) return;
+  const r = await shareUrl(`${location.origin}/#run=${state.openRun}`, 'IQ Board — examination record');
+  if (r === 'copied') { $('overlay-share').textContent = 'COPIED ✓'; setTimeout(() => { $('overlay-share').textContent = 'COPY LINK ⎘'; }, 2500); }
+});
 async function loadOverlay(id) {
   const { run, events } = await fetch(`/api/runs/${id}`).then((r) => r.json());
   $('overlay-title').textContent = `${run.label} — № ${run.id}`;
@@ -230,8 +264,13 @@ async function loadOverlay(id) {
     return `<div class="ev"><span class="ev-time">${time}</span><div><div class="ev-type">${ev.type.replace(/_/g, ' ')}</div>${body}</div></div>`;
   }).join('') || '<p class="ledger-empty">No events yet.</p>';
 }
-$('overlay-close').addEventListener('click', () => { $('overlay').hidden = true; state.openRun = null; });
-$('overlay').addEventListener('click', (e) => { if (e.target === $('overlay')) { $('overlay').hidden = true; state.openRun = null; } });
+function closeOverlay() {
+  $('overlay').hidden = true;
+  state.openRun = null;
+  history.replaceState(null, '', location.pathname);
+}
+$('overlay-close').addEventListener('click', closeOverlay);
+$('overlay').addEventListener('click', (e) => { if (e.target === $('overlay')) closeOverlay(); });
 
 /* ── launch ── */
 $('launch-form').addEventListener('submit', async (e) => {
