@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IQ BOARD — agent examination hall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-rule"></div>
+  <div class="masthead-row">
+    <h1 class="wordmark">IQ<span class="wordmark-x">×</span><em>Board</em></h1>
+    <div class="masthead-meta">
+      <div class="meta-line">MENSA NORWAY TEST · LINKED BY MENSA.SE</div>
+      <div class="meta-line">35 QUESTIONS — 25:00 — SIX ALTERNATIVES</div>
+      <div class="meta-line" id="conn-line"><span class="conn-dot" id="conn-dot">●</span> <span id="conn-text">CONNECTING</span></div>
+    </div>
+  </div>
+  <p class="masthead-sub">An examination hall for machine minds. Each agent sits the official online test in its own isolated browser — watched, timed, and scored.</p>
+  <div class="masthead-rule thick"></div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-inner" id="ticker">
+      <span>SILENCE IN THE HALL&nbsp;·&nbsp;</span><span>NO CALCULATORS&nbsp;·&nbsp;</span><span>SIX ALTERNATIVES, ONE CORRECT&nbsp;·&nbsp;</span><span>25 MINUTES, 35 QUESTIONS&nbsp;·&nbsp;</span>
+    </div>
+  </div>
+</header>
+
+<main class="hall">
+
+  <!-- ─── Launch desk ─────────────────────────────── -->
+  <section class="panel launch" id="launch-panel">
+    <h2 class="panel-title"><span class="panel-no">01</span> Seat a candidate</h2>
+    <form id="launch-form" autocomplete="off">
+      <div class="field-grid">
+        <label class="field">
+          <span class="field-label">Provider</span>
+          <select id="f-provider" required></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Model</span>
+          <input id="f-model" type="text" placeholder="(provider default)" />
+        </label>
+        <label class="field">
+          <span class="field-label">Candidate name</span>
+          <input id="f-label" type="text" placeholder="e.g. Claude Opus 4.8" />
+        </label>
+        <label class="field" id="effort-field">
+          <span class="field-label">Effort <small>(Anthropic)</small></span>
+          <select id="f-effort">
+            <option value="">default</option>
+            <option value="low">low</option>
+            <option value="medium" selected>medium</option>
+            <option value="high">high</option>
+            <option value="xhigh">xhigh</option>
+            <option value="max">max</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">API key <small>(blank = server key)</small></span>
+          <input id="f-key" type="password" placeholder="sk-…" />
+        </label>
+        <label class="field" id="admin-field" hidden>
+          <span class="field-label">Admin token</span>
+          <input id="f-admin" type="password" placeholder="required to launch" />
+        </label>
+      </div>
+      <div class="launch-row">
+        <button type="submit" class="btn-ink" id="launch-btn">BEGIN EXAMINATION ⟶</button>
+        <span class="launch-note" id="launch-note"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ─── Live desks ─────────────────────────────── -->
+  <section class="panel">
+    <h2 class="panel-title"><span class="panel-no">02</span> The hall <span class="title-aside" id="hall-count"></span></h2>
+    <div class="desks" id="desks">
+      <div class="empty-hall" id="empty-hall">
+        <div class="empty-glyph">∅</div>
+        <p>The hall is empty.<br/>No candidate has been seated yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Leaderboard ─────────────────────────────── -->
+  <section class="panel">
+    <h2 class="panel-title"><span class="panel-no">03</span> Register of results</h2>
+    <div class="ledger" id="ledger"></div>
+  </section>
+
+</main>
+
+<footer class="colophon">
+  <div class="masthead-rule"></div>
+  <p>Runs one polite session at a time against test.mensa.no — a free public practice test. Scores are indicative, not official. Human baseline entered manually.</p>
+</footer>
+
+<!-- ─── Run detail overlay ─────────────────────────── -->
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-sheet">
+    <div class="overlay-head">
+      <h3 id="overlay-title">—</h3>
+      <button class="btn-ink btn-small" id="overlay-close">CLOSE ✕</button>
+    </div>
+    <div class="overlay-body" id="overlay-body"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
