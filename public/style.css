@@ -23,7 +23,6 @@ body {
     var(--paper);
   min-height: 100vh;
   padding: 0 clamp(16px, 4vw, 56px) 60px;
-  cursor: crosshair;
   position: relative;
 }
 
