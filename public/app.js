@@ -119,6 +119,9 @@ function renderDesks() {
 
 function deskHTML(run) {
   const latest = state.latest.get(run.id) || { answers: new Map() };
+  // Fall back to server-persisted visuals (survives page reloads).
+  if (!latest.screenshot && run.lastShot) latest.screenshot = run.lastShot;
+  if (!latest.rationale && run.lastRationale) latest.rationale = run.lastRationale;
   const bubbles = Array.from({ length: run.totalQuestions || 35 }, (_, i) => {
     const a = latest.answers.get(i + 1);
     if (a) return `<span class="bubble ${a.fallback ? 'guess' : 'done'}" title="Q${i + 1}: ${a.answer}${a.fallback ? ' (fallback)' : ''}"></span>`;

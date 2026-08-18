@@ -127,6 +127,9 @@ export class Arena {
         emit: (type, payload) => {
           if (payload.question) run.question = payload.question;
           if (payload.secondsRemaining !== undefined) run.secondsRemaining = payload.secondsRemaining;
+          // Persist the latest visuals so desks re-render fully after a reload/restart.
+          if (payload.screenshot) run.lastShot = payload.screenshot;
+          if (payload.rationale) run.lastRationale = payload.rationale;
           this.emitRunEvent(run, type, payload);
         },
       });
