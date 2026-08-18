@@ -45,7 +45,7 @@ export const openaiProvider = makeOpenAICompatible({
   id: 'openai',
   label: 'OpenAI (GPT)',
   baseURL: 'https://api.openai.com/v1',
-  defaultModel: 'gpt-5.1',
+  defaultModel: 'gpt-5.5',
   envKey: 'OPENAI_API_KEY',
 });
 
@@ -53,6 +53,6 @@ export const xaiProvider = makeOpenAICompatible({
   id: 'xai',
   label: 'xAI (Grok)',
   baseURL: 'https://api.x.ai/v1',
-  defaultModel: 'grok-4',
+  defaultModel: 'grok-4.6',
   envKey: 'XAI_API_KEY',
 });

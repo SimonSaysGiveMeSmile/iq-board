@@ -3,7 +3,7 @@ import { buildSystemPrompt, buildQuestionText, parseAnswer } from '../prompt.js'
 export const googleProvider = {
   id: 'google',
   label: 'Google (Gemini)',
-  defaultModel: 'gemini-2.5-pro',
+  defaultModel: 'gemini-flash-latest',
   envKey: 'GOOGLE_API_KEY',
 
   async choose({ imageBase64, questionNumber, totalQuestions, secondsRemaining, questionsRemaining, model, apiKey, signal }) {
